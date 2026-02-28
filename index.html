@@ -430,10 +430,10 @@ function spawnFloatText(x, y, text) {
   const el = document.createElement('div');
   el.className = 'float-text';
   el.textContent = text;
-  el.style.left = (x - 20 + Math.random()*40 - 20) + 'px';
+  el.style.left = (x + Math.random()*40 - 20) + 'px';
   el.style.top = (y - 10) + 'px';
   document.body.appendChild(el);
-  el.addEventListener('animationend', () => el.remove());
+  setTimeout(() => el.remove(), 900);
 }
 
 // ===== BUY BUILDING =====
