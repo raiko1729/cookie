@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍪 Cookie Clicker</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --panel: #12121a;
+    --border: #2a2a3a;
+    --accent: #ff9f00;
+    --accent2: #ff5f5f;
+    --accent3: #5fff8f;
+    --text: #e8e8f0;
+    --glow: rgba(255,159,0,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'VT323', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.015) 2px, rgba(255,255,255,0.015) 4px);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(14px, 2.5vw, 22px);
+    text-align: center;
+    color: var(--accent);
+    text-shadow: 0 0 20px var(--glow), 0 0 40px var(--glow);
+    padding: 18px;
+    letter-spacing: 2px;
+    border-bottom: 2px solid var(--border);
+    animation: flicker 4s infinite;
+  }
+
+  @keyframes flicker {
+    0%,95%,100% { opacity: 1; }
+    96% { opacity: 0.85; }
+    97% { opacity: 1; }
+    98% { opacity: 0.9; }
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 260px 1fr;
+    gap: 0;
+    height: calc(100vh - 70px);
+  }
+
+  /* ===== LEFT PANEL ===== */
+  .left-panel {
+    border-right: 2px solid var(--border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .cookie-count {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(12px, 2vw, 18px);
+    color: var(--accent);
+    text-align: center;
+    text-shadow: 0 0 10px var(--glow);
+  }
+
+  .cookie-count span {
+    display: block;
+    font-size: 0.6em;
+    color: var(--text);
+    opacity: 0.7;
+    margin-top: 6px;
+  }
+
+  .cookie-btn {
+    position: relative;
+    width: clamp(120px, 18vw, 200px);
+    height: clamp(120px, 18vw, 200px);
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+    transition: transform 0.08s;
+    filter: drop-shadow(0 0 20px rgba(255,159,0,0.3));
+  }
+
+  .cookie-btn:active {
+    transform: scale(0.88);
+    filter: drop-shadow(0 0 35px rgba(255,159,0,0.7));
+  }
+
+  .cookie-btn .cookie-svg {
+    width: 100%;
+    height: 100%;
+    transition: filter 0.1s;
+  }
+
+  .cookie-btn:hover .cookie-svg {
+    filter: brightness(1.2);
+  }
+
+  .cps-display {
+    font-size: 20px;
+    color: var(--accent3);
+    text-align: center;
+    text-shadow: 0 0 8px rgba(95,255,143,0.5);
+  }
+
+  .stats-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 12px 18px;
+    width: 100%;
+    max-width: 280px;
+    font-size: 18px;
+    line-height: 2;
+  }
+
+  .stats-box .row {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dashed var(--border);
+  }
+  .stats-box .row:last-child { border-bottom: none; }
+  .stats-box .label { color: #888; }
+  .stats-box .val { color: var(--accent); }
+
+  /* ===== CENTER PANEL ===== */
+  .center-panel {
+    background: var(--panel);
+    border-right: 2px solid var(--border);
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .center-panel::-webkit-scrollbar { width: 4px; }
+  .center-panel::-webkit-scrollbar-track { background: var(--bg); }
+  .center-panel::-webkit-scrollbar-thumb { background: var(--accent); }
+
+  .panel-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: var(--accent2);
+    padding: 12px 14px 8px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 1px;
+  }
+
+  .upgrade-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+  }
+
+  .upgrade-item:hover:not(.locked) { background: rgba(255,159,0,0.07); }
+  .upgrade-item.locked { opacity: 0.35; cursor: not-allowed; }
+  .upgrade-item.affordable { background: rgba(255,159,0,0.04); }
+  .upgrade-item.affordable::before {
+    content: '▶';
+    position: absolute;
+    left: 4px;
+    color: var(--accent);
+    font-size: 10px;
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .upgrade-icon { font-size: 26px; width: 32px; text-align: center; }
+  .upgrade-info { flex: 1; min-width: 0; }
+  .upgrade-name { font-size: 16px; color: var(--text); }
+  .upgrade-desc { font-size: 13px; color: #777; margin-top: 2px; }
+  .upgrade-owned { font-size: 13px; color: var(--accent3); }
+  .upgrade-cost {
+    font-size: 14px;
+    color: var(--accent);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* ===== RIGHT PANEL ===== */
+  .right-panel {
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .right-panel::-webkit-scrollbar { width: 4px; }
+  .right-panel::-webkit-scrollbar-track { background: var(--bg); }
+  .right-panel::-webkit-scrollbar-thumb { background: var(--accent2); }
+
+  .milestone-item {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .milestone-item.achieved { color: var(--accent3); }
+  .milestone-item.not-achieved { opacity: 0.3; }
+  .milestone-icon { font-size: 18px; }
+
+  /* Float text */
+  .float-text {
+    position: fixed;
+    pointer-events: none;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    text-shadow: 0 0 10px var(--glow);
+    animation: floatUp 0.9s ease-out forwards;
+    z-index: 1000;
+  }
+
+  @keyframes floatUp {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-80px) scale(0.7); }
+  }
+
+  .reset-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    background: none;
+    border: 1px solid var(--accent2);
+    color: var(--accent2);
+    padding: 8px 14px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .reset-btn:hover { background: var(--accent2); color: var(--bg); }
+
+  /* Scrollbar reset */
+  .layout > * { overflow-y: auto; }
+
+  @media (max-width: 700px) {
+    .layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+      height: auto;
+    }
+    .left-panel, .center-panel, .right-panel {
+      border-right: none;
+      border-bottom: 2px solid var(--border);
+      max-height: none;
+      overflow-y: visible;
+    }
+    .left-panel { padding: 20px 10px; min-height: 280px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🍪 COOKIE CLICKER</h1>
+
+<div class="layout">
+  <!-- LEFT: Main clicker -->
+  <div class="left-panel">
+    <div class="cookie-count"><span id="cookieCount">0</span><span style="display:block;font-size:0.6em;color:var(--text);opacity:0.7;margin-top:6px">クッキー</span></div>
+    
+    <button class="cookie-btn" id="cookieBtn" onclick="clickCookie(event)">
+      <svg class="cookie-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="90" fill="#c8853a"/>
+        <circle cx="100" cy="100" r="85" fill="#d9924a"/>
+        <!-- texture -->
+        <circle cx="100" cy="100" r="82" fill="none" stroke="#c07535" stroke-width="1" opacity="0.5"/>
+        <!-- chips -->
+        <ellipse cx="65" cy="70" rx="11" ry="8" fill="#5c3317" transform="rotate(-20,65,70)"/>
+        <ellipse cx="120" cy="60" rx="9" ry="7" fill="#4a2910" transform="rotate(15,120,60)"/>
+        <ellipse cx="145" cy="110" rx="10" ry="7" fill="#5c3317" transform="rotate(-10,145,110)"/>
+        <ellipse cx="75" cy="135" rx="11" ry="8" fill="#4a2910" transform="rotate(25,75,135)"/>
+        <ellipse cx="115" cy="140" rx="8" ry="6" fill="#5c3317" transform="rotate(-5,115,140)"/>
+        <ellipse cx="90" cy="100" rx="10" ry="7" fill="#4a2910" transform="rotate(10,90,100)"/>
+        <!-- highlight -->
+        <ellipse cx="75" cy="60" rx="18" ry="12" fill="rgba(255,220,160,0.15)" transform="rotate(-30,75,60)"/>
+        <!-- crack lines -->
+        <path d="M100 30 Q95 60 105 80 Q98 110 103 130" stroke="#b07030" stroke-width="1.5" fill="none" opacity="0.4"/>
+        <path d="M50 100 Q80 95 95 100 Q120 105 150 98" stroke="#b07030" stroke-width="1" fill="none" opacity="0.3"/>
+      </svg>
+    </button>
+
+    <div class="cps-display" id="cpsDisplay">CPS: 0.0</div>
+
+    <div class="stats-box">
+      <div class="row"><span class="label">総クリック</span><span class="val" id="totalClicks">0</span></div>
+      <div class="row"><span class="label">総生産</span><span class="val" id="totalProduced">0</span></div>
+      <div class="row"><span class="label">クリック倍率</span><span class="val" id="clickMultiplier">x1</span></div>
+    </div>
+
+    <button class="reset-btn" onclick="resetGame()">🗑 RESET</button>
+  </div>
+
+  <!-- CENTER: Upgrades/Buildings -->
+  <div class="center-panel">
+    <div class="panel-title">🏗 ビルディング</div>
+    <div id="buildingList"></div>
+    <div class="panel-title" style="margin-top:4px">⚡ アップグレード</div>
+    <div id="upgradeList"></div>
+  </div>
+
+  <!-- RIGHT: Milestones -->
+  <div class="right-panel">
+    <div class="panel-title">🏆 マイルストーン</div>
+    <div id="milestoneList"></div>
+  </div>
+</div>
+
+<script>
+// ===== GAME STATE =====
+const state = {
+  cookies: 0,
+  totalCookies: 0,
+  totalClicks: 0,
+  clickPower: 1,
+  cps: 0,
+  buildings: [],
+  upgrades: [],
+  achievedMilestones: new Set(),
+};
+
+// ===== BUILDINGS =====
+const BUILDINGS = [
+  { id: 'cursor',    name: 'カーソル',       icon: '🖱️',  baseCost: 15,    baseCps: 0.1,  desc: '自動クリック！' },
+  { id: 'grandma',   name: 'おばあちゃん',   icon: '👵',  baseCost: 100,   baseCps: 0.5,  desc: 'クッキーを焼く' },
+  { id: 'farm',      name: 'クッキー農場',   icon: '🌾',  baseCost: 500,   baseCps: 2,    desc: '大量生産' },
+  { id: 'mine',      name: 'クッキー鉱山',   icon: '⛏️',  baseCost: 2000,  baseCps: 8,    desc: '地下からザクザク' },
+  { id: 'factory',   name: '工場',           icon: '🏭',  baseCost: 8000,  baseCps: 25,   desc: '機械で自動化' },
+  { id: 'bank',      name: '銀行',           icon: '🏦',  baseCost: 30000, baseCps: 80,   desc: 'クッキー金融' },
+  { id: 'temple',    name: '神殿',           icon: '🛕',  baseCost: 100000,baseCps: 200,  desc: 'クッキーの神に祈る' },
+  { id: 'wizard',    name: '魔法使いの塔',   icon: '🧙',  baseCost: 350000,baseCps: 500,  desc: '魔法でクッキーを召喚' },
+];
+
+const UPGRADES = [
+  { id: 'u1',  name: 'サクサク生地',       icon: '🥄', cost: 100,    req: () => state.cookies >= 50,          effect: () => { state.clickPower *= 2; }, desc: 'クリック力 x2' },
+  { id: 'u2',  name: '強力な腕',           icon: '💪', cost: 500,    req: () => state.clickPower >= 2,         effect: () => { state.clickPower *= 2; }, desc: 'クリック力 x2' },
+  { id: 'u3',  name: 'カーソル改善',       icon: '🖱️', cost: 200,    req: () => getBuildingOwned('cursor')>=1, effect: () => multiBuildingCps('cursor', 2), desc: 'カーソルCPS x2' },
+  { id: 'u4',  name: 'おばあちゃんのレシピ',icon: '📜', cost: 1000,   req: () => getBuildingOwned('grandma')>=1,effect: () => multiBuildingCps('grandma', 2), desc: 'おばあちゃんCPS x2' },
+  { id: 'u5',  name: '有機農業',           icon: '🌿', cost: 4000,   req: () => getBuildingOwned('farm')>=1,   effect: () => multiBuildingCps('farm', 2), desc: '農場CPS x2' },
+  { id: 'u6',  name: 'ダイヤモンドドリル', icon: '💎', cost: 15000,  req: () => getBuildingOwned('mine')>=1,   effect: () => multiBuildingCps('mine', 2), desc: '鉱山CPS x2' },
+  { id: 'u7',  name: 'AIロボット',         icon: '🤖', cost: 50000,  req: () => getBuildingOwned('factory')>=1,effect: () => multiBuildingCps('factory', 2), desc: '工場CPS x2' },
+  { id: 'u8',  name: 'クッキー投資信託',   icon: '📈', cost: 150000, req: () => getBuildingOwned('bank')>=1,   effect: () => multiBuildingCps('bank', 2), desc: '銀行CPS x2' },
+  { id: 'u9',  name: '超クリック',         icon: '⚡', cost: 2000,   req: () => state.totalClicks >= 100,      effect: () => { state.clickPower *= 3; }, desc: 'クリック力 x3' },
+  { id: 'u10', name: 'ゴールデンクッキー', icon: '✨', cost: 10000,  req: () => state.totalCookies >= 5000,    effect: () => { state.clickPower *= 2; multiBuildingCps('cursor', 3); }, desc: '全体強化！' },
+];
+
+const MILESTONES = [
+  { id:'m1',  icon:'🌱', name:'最初の一歩',       check: ()=> state.totalCookies >= 1 },
+  { id:'m2',  icon:'🍪', name:'100クッキー',       check: ()=> state.totalCookies >= 100 },
+  { id:'m3',  icon:'🎉', name:'1000クッキー',      check: ()=> state.totalCookies >= 1000 },
+  { id:'m4',  icon:'⭐', name:'1万クッキー',       check: ()=> state.totalCookies >= 10000 },
+  { id:'m5',  icon:'🌟', name:'10万クッキー',      check: ()=> state.totalCookies >= 100000 },
+  { id:'m6',  icon:'💫', name:'100万クッキー',     check: ()=> state.totalCookies >= 1000000 },
+  { id:'m7',  icon:'🚀', name:'1000万クッキー',    check: ()=> state.totalCookies >= 10000000 },
+  { id:'m8',  icon:'👆', name:'クリック10回',      check: ()=> state.totalClicks >= 10 },
+  { id:'m9',  icon:'✌️', name:'クリック100回',     check: ()=> state.totalClicks >= 100 },
+  { id:'m10', icon:'🤘', name:'クリック1000回',    check: ()=> state.totalClicks >= 1000 },
+  { id:'m11', icon:'🏗️', name:'最初のビルディング',check: ()=> state.buildings.some(b=>b.owned>0) },
+  { id:'m12', icon:'🏙️', name:'全ビルディング所持',check: ()=> state.buildings.length===BUILDINGS.length && state.buildings.every(b=>b.owned>0) },
+  { id:'m13', icon:'⚡', name:'最初のアップグレード',check: ()=> state.upgrades.some(u=>u.purchased) },
+  { id:'m14', icon:'🔥', name:'全アップグレード解禁',check: ()=> state.upgrades.every(u=>u.purchased) },
+];
+
+function getBuildingOwned(id) {
+  const b = state.buildings.find(b=>b.id===id);
+  return b ? b.owned : 0;
+}
+
+function multiBuildingCps(id, mul) {
+  const b = state.buildings.find(b=>b.id===id);
+  if (b) b.cpsPerUnit *= mul;
+}
+
+// Init buildings
+BUILDINGS.forEach(def => {
+  state.buildings.push({ ...def, owned: 0, cpsPerUnit: def.baseCps });
+});
+
+// Init upgrades
+UPGRADES.forEach(def => {
+  state.upgrades.push({ ...def, purchased: false });
+});
+
+// ===== FORMAT NUMBER =====
+function fmt(n) {
+  if (n >= 1e12) return (n/1e12).toFixed(2) + '兆';
+  if (n >= 1e8)  return (n/1e8).toFixed(2) + '億';
+  if (n >= 1e4)  return (n/1e4).toFixed(2) + '万';
+  return Math.floor(n).toLocaleString();
+}
+
+// ===== CLICK =====
+function clickCookie(e) {
+  const earned = state.clickPower;
+  state.cookies += earned;
+  state.totalCookies += earned;
+  state.totalClicks++;
+
+  spawnFloatText(e.clientX, e.clientY, `+${fmt(earned)}`);
+  updateDisplay();
+}
+
+function spawnFloatText(x, y, text) {
+  const el = document.createElement('div');
+  el.className = 'float-text';
+  el.textContent = text;
+  el.style.left = (x - 20 + Math.random()*40 - 20) + 'px';
+  el.style.top = (y - 10) + 'px';
+  document.body.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+}
+
+// ===== BUY BUILDING =====
+function buyBuilding(id) {
+  const b = state.buildings.find(b=>b.id===id);
+  if (!b) return;
+  const cost = getBuildingCost(b);
+  if (state.cookies < cost) return;
+  state.cookies -= cost;
+  b.owned++;
+  recalcCps();
+  updateDisplay();
+  renderBuildings();
+}
+
+function getBuildingCost(b) {
+  return Math.floor(b.baseCost * Math.pow(1.15, b.owned));
+}
+
+// ===== BUY UPGRADE =====
+function buyUpgrade(id) {
+  const u = state.upgrades.find(u=>u.id===id);
+  if (!u || u.purchased || state.cookies < u.cost) return;
+  state.cookies -= u.cost;
+  u.purchased = true;
+  u.effect();
+  recalcCps();
+  updateDisplay();
+  renderUpgrades();
+}
+
+function recalcCps() {
+  state.cps = state.buildings.reduce((sum, b) => sum + b.cpsPerUnit * b.owned, 0);
+}
+
+// ===== RENDER =====
+function renderBuildings() {
+  const list = document.getElementById('buildingList');
+  list.innerHTML = '';
+  state.buildings.forEach(b => {
+    const cost = getBuildingCost(b);
+    const canAfford = state.cookies >= cost;
+    const div = document.createElement('div');
+    div.className = 'upgrade-item' + (!canAfford && b.owned === 0 ? ' locked' : '') + (canAfford ? ' affordable' : '');
+    div.innerHTML = `
+      <div class="upgrade-icon">${b.icon}</div>
+      <div class="upgrade-info">
+        <div class="upgrade-name">${b.name}</div>
+        <div class="upgrade-desc">${b.desc} (+${b.cpsPerUnit}/s)</div>
+      </div>
+      <div>
+        <div class="upgrade-cost">🍪 ${fmt(cost)}</div>
+        <div class="upgrade-owned">所持: ${b.owned}</div>
+      </div>`;
+    if (canAfford || b.owned > 0) div.onclick = () => buyBuilding(b.id);
+    list.appendChild(div);
+  });
+}
+
+function renderUpgrades() {
+  const list = document.getElementById('upgradeList');
+  list.innerHTML = '';
+  state.upgrades.forEach(u => {
+    if (u.purchased) return;
+    const visible = u.req();
+    if (!visible) return;
+    const canAfford = state.cookies >= u.cost;
+    const div = document.createElement('div');
+    div.className = 'upgrade-item' + (canAfford ? ' affordable' : '');
+    div.innerHTML = `
+      <div class="upgrade-icon">${u.icon}</div>
+      <div class="upgrade-info">
+        <div class="upgrade-name">${u.name}</div>
+        <div class="upgrade-desc">${u.desc}</div>
+      </div>
+      <div class="upgrade-cost">🍪 ${fmt(u.cost)}</div>`;
+    if (canAfford) div.onclick = () => buyUpgrade(u.id);
+    list.appendChild(div);
+  });
+}
+
+function renderMilestones() {
+  const list = document.getElementById('milestoneList');
+  list.innerHTML = '';
+  MILESTONES.forEach(m => {
+    const achieved = m.check();
+    const div = document.createElement('div');
+    div.className = 'milestone-item ' + (achieved ? 'achieved' : 'not-achieved');
+    div.innerHTML = `<span class="milestone-icon">${achieved ? m.icon : '❓'}</span> ${achieved ? m.name : '???'}`;
+    list.appendChild(div);
+  });
+}
+
+function updateDisplay() {
+  document.getElementById('cookieCount').textContent = fmt(state.cookies);
+  document.getElementById('cpsDisplay').textContent = `CPS: ${state.cps.toFixed(1)}`;
+  document.getElementById('totalClicks').textContent = fmt(state.totalClicks);
+  document.getElementById('totalProduced').textContent = fmt(state.totalCookies);
+  document.getElementById('clickMultiplier').textContent = `x${state.clickPower}`;
+  renderMilestones();
+}
+
+// ===== SAVE / LOAD / RESET =====
+function saveGame() {
+  const data = {
+    cookies: state.cookies,
+    totalCookies: state.totalCookies,
+    totalClicks: state.totalClicks,
+    clickPower: state.clickPower,
+    buildings: state.buildings.map(b => ({ id: b.id, owned: b.owned, cpsPerUnit: b.cpsPerUnit })),
+    upgrades: state.upgrades.map(u => ({ id: u.id, purchased: u.purchased })),
+  };
+  localStorage.setItem('cookieClickerSave', JSON.stringify(data));
+}
+
+function loadGame() {
+  const raw = localStorage.getItem('cookieClickerSave');
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    state.cookies = data.cookies || 0;
+    state.totalCookies = data.totalCookies || 0;
+    state.totalClicks = data.totalClicks || 0;
+    state.clickPower = data.clickPower || 1;
+    data.buildings.forEach(saved => {
+      const b = state.buildings.find(b => b.id === saved.id);
+      if (b) { b.owned = saved.owned; b.cpsPerUnit = saved.cpsPerUnit; }
+    });
+    data.upgrades.forEach(saved => {
+      const u = state.upgrades.find(u => u.id === saved.id);
+      if (u) u.purchased = saved.purchased;
+    });
+    recalcCps();
+  } catch(e) { console.error('Load failed', e); }
+}
+
+function resetGame() {
+  if (!confirm('本当にリセットしますか？すべてのデータが消えます。')) return;
+  localStorage.removeItem('cookieClickerSave');
+  location.reload();
+}
+
+// ===== GAME LOOP =====
+let lastTime = performance.now();
+let renderTimer = 0;
+let saveTimer = 0;
+function gameLoop(now) {
+  const dt = Math.min((now - lastTime) / 1000, 0.1);
+  lastTime = now;
+
+  const earned = state.cps * dt;
+  state.cookies += earned;
+  state.totalCookies += earned;
+
+  updateDisplay();
+
+  renderTimer += dt;
+  if (renderTimer >= 0.5) {
+    renderTimer = 0;
+    renderBuildings();
+    renderUpgrades();
+  }
+
+  // 5秒ごとに自動セーブ
+  saveTimer += dt;
+  if (saveTimer >= 5) {
+    saveTimer = 0;
+    saveGame();
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ===== INIT =====
+loadGame();
+renderBuildings();
+renderUpgrades();
+updateDisplay();
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
